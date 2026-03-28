@@ -33,9 +33,9 @@ if os.path.exists(_env):
 GMAIL_USER         = os.environ.get("GMAIL_USER", "shanes.solar.solutions@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
-PORT = 8766
+PORT = int(os.environ.get("PORT", 8766))
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-CREDENTIALS_FILE = os.path.join(PROJECT_DIR, "credentials.json")
+CREDENTIALS_FILE = os.environ.get("CREDENTIALS_FILE", os.path.join(PROJECT_DIR, "credentials.json"))
 
 SPREADSHEET_ID = "1xwqi4cldEuBMpIZ-9IZ7AT3rWEqxeDAnX3Lc7N5SJKg"
 SHEET_TAB = "Listings"
@@ -289,5 +289,5 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.chdir(PROJECT_DIR)
-    print(f"SolarShare EV Cebu running at http://localhost:{PORT}", flush=True)
-    http.server.HTTPServer(("localhost", PORT), Handler).serve_forever()
+    print(f"EV-ChargeUp Cebu running on port {PORT}", flush=True)
+    http.server.HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
