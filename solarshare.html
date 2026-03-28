@@ -116,6 +116,33 @@
   .mission-text { font-size:11px; line-height:1.6; color:var(--text); }
   .mission-text strong { display:block; font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
   .mission-text em { color:var(--muted); font-style:normal; opacity:0.65; }
+
+  /* ── MOBILE ──────────────────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    body { height: 100dvh; overflow: hidden; }
+
+    header { padding: 0 14px; height: 54px; }
+    .logo { font-size: 18px; gap: 7px; }
+    .logo-icon { width: 24px; height: 24px; font-size: 12px; border-radius: 6px; }
+    .list-btn { padding: 6px 14px; font-size: 11px; }
+
+    .main { flex-direction: column; }
+
+    #map { height: 42vh; flex: none; }
+
+    .sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); flex: 1; }
+
+    .sidebar-top { padding: 10px 14px 8px; }
+    .sidebar-count { font-size: 16px; }
+
+    .popup { right: 0; padding: 16px 18px 22px; }
+    .popup-name { font-size: 17px; }
+    .popup-price-note { display: none; }
+
+    .mission { display: none; }
+
+    .modal { padding: 20px 16px; border-radius: 10px; }
+  }
 </style>
 </head>
 <body>
