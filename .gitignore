@@ -1,0 +1,36 @@
+# Secrets — NEVER commit these
+credentials.json
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs and data
+*.log
+*.csv
+Payroll/
+
+# Unrelated projects
+sonesta_project/
+
+# Unrelated payroll scripts
+NGTECO.py
+push_to_sheets.py
+push_from_csv.py
+thirteenth_month.py
+attendance_summary.py
+export_payroll_pdf.py
+read_employees.py
+menu.py
+Dailies_copy.py
+sz.py
+dashboard.py
+dashboard.html
+server.py
+CLAUDE.md
+
+# macOS
+.DS_Store

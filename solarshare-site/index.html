@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarShare EV Cebu</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #22c97a;
+    --dark: #0E0F0D;
+    --card: #141613;
+    --card2: #1b1e1a;
+    --border: rgba(255,255,255,0.07);
+    --text: #EEEbE4;
+    --muted: #7a7e79;
+  }
+  body { font-family:'DM Sans',sans-serif; background:var(--dark); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+  header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:52px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; z-index:1000; }
+  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; display:flex; align-items:center; gap:9px; }
+  .logo-icon { width:28px; height:28px; background:var(--green); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .logo em { color:var(--green); font-style:normal; }
+  .list-btn { padding:7px 18px; border-radius:20px; border:1px solid var(--green); background:transparent; color:var(--green); font-family:'Syne',sans-serif; font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s; }
+  .list-btn:hover { background:var(--green); color:#000; }
+
+  .main { display:flex; flex:1; overflow:hidden; position:relative; }
+  #map { flex:1; }
+  .leaflet-tile { filter:brightness(0.6) saturate(0.35); }
+
+  .sidebar { width:290px; background:var(--card); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+  .sidebar-top { padding:16px 18px 12px; border-bottom:1px solid var(--border); }
+  .sidebar-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:3px; }
+  .sidebar-count { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; }
+  .sidebar-count em { color:var(--green); font-style:normal; }
+  .sidebar-sub { font-size:11px; color:var(--muted); margin-top:3px; }
+
+  .cards { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:6px; }
+  .cards::-webkit-scrollbar { width:3px; }
+  .cards::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .card { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:13px 14px; cursor:pointer; transition:border-color 0.15s, transform 0.15s; }
+  .card:hover { border-color:rgba(34,201,122,0.35); transform:translateX(-2px); }
+  .card.active { border-color:var(--green); background:rgba(34,201,122,0.05); }
+  .card-name { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; margin-bottom:2px; }
+  .card-place { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .card-tags { display:flex; gap:5px; flex-wrap:wrap; }
+  .tag { font-size:10px; font-weight:500; padding:2px 9px; border-radius:20px; background:rgba(34,201,122,0.14); color:var(--green); }
+
+  .empty-state { padding:40px 18px; text-align:center; color:var(--muted); font-size:13px; line-height:1.7; }
+  .empty-state strong { display:block; font-family:'Syne',sans-serif; font-size:14px; color:var(--text); margin-bottom:6px; }
+
+  .popup { position:absolute; bottom:0; left:0; right:290px; background:var(--card); border-top:1px solid var(--border); padding:22px 26px 26px; z-index:999; transform:translateY(100%); transition:transform 0.28s cubic-bezier(0.4,0,0.2,1); }
+  .popup.open { transform:translateY(0); }
+  .popup-close { position:absolute; top:16px; right:20px; width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--card2); color:var(--muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:color 0.15s; }
+  .popup-close:hover { color:var(--text); }
+  .popup-name { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; margin-bottom:3px; }
+  .popup-address { font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .popup-chips { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .chip { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; background:rgba(34,201,122,0.12); color:var(--green); border:1px solid rgba(34,201,122,0.25); }
+  .popup-note { font-size:13px; color:var(--text); margin-bottom:18px; opacity:0.75; line-height:1.5; }
+  .contact-btn { padding:11px 28px; border-radius:8px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:opacity 0.2s; }
+  .contact-btn:hover { opacity:0.85; }
+
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:2000; display:none; align-items:center; justify-content:center; }
+  .overlay.open { display:flex; }
+  .modal { background:var(--card); border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:26px; width:400px; max-width:94vw; max-height:90vh; overflow-y:auto; }
+  .modal-name { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; margin-bottom:4px; }
+  .modal-sub { font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+  .field { margin-bottom:13px; }
+  .field label { display:block; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-bottom:5px; }
+  .field input, .field textarea, .field select { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:7px; padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color 0.15s; }
+  .field select { cursor:pointer; }
+  .field select option { background:var(--card2); }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color:var(--green); }
+  .field textarea { resize:vertical; min-height:80px; }
+  .field-row { display:flex; gap:8px; }
+  .field-row .field { flex:1; }
+  .modal-actions { display:flex; gap:8px; margin-top:16px; }
+  .btn-cancel { flex:1; padding:10px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+  .btn-cancel:hover { color:var(--text); }
+  .btn-send { flex:2; padding:10px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:opacity 0.2s; }
+  .btn-send:hover { opacity:0.85; }
+  .btn-send:disabled { opacity:0.5; cursor:not-allowed; }
+  .geo-btn { font-size:11px; color:var(--green); background:none; border:none; cursor:pointer; padding:0; margin-top:4px; text-decoration:underline; }
+  .form-error { font-size:12px; color:#f87171; margin-top:10px; text-align:center; }
+  .success { text-align:center; padding:8px 0; }
+  .success .icon { font-size:36px; margin-bottom:10px; }
+  .success h3 { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; margin-bottom:6px; }
+  .success p { font-size:12px; color:var(--muted); line-height:1.6; }
+  .success button { margin-top:18px; padding:10px 28px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#9889;</div>
+    Solar<em>Share EV</em> Cebu
+  </div>
+  <button class="list-btn" onclick="showRegister()">+ List my home</button>
+</header>
+
+<div class="main">
+  <div id="map"></div>
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-label">Community map</div>
+      <div class="sidebar-count"><em id="count">&#8212;</em> homes listed</div>
+      <div class="sidebar-sub">Solar panels &middot; EV charger &middot; Cebu</div>
+    </div>
+    <div class="cards" id="cards">
+      <div class="empty-state">Loading&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<div class="popup" id="popup">
+  <button class="popup-close" onclick="closePopup()">&#215;</button>
+  <div class="popup-name" id="p-name"></div>
+  <div class="popup-address" id="p-address"></div>
+  <div class="popup-chips" id="p-chips"></div>
+  <div class="popup-note" id="p-note"></div>
+  <button class="contact-btn" onclick="openContact()">Contact owner &rarr;</button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+// Set by deploy.sh — do not edit manually
+const API_URL = "SOLARSHARE_API_URL";
+
+const BARANGAY_COORDS = {
+  "Lahug":                [10.3322, 123.9050],
+  "Banilad":              [10.3410, 123.9020],
+  "Camputhaw":            [10.3280, 123.9100],
+  "Pardo":                [10.2950, 123.8900],
+  "Talamban":             [10.3600, 123.9150],
+  "Mabolo":               [10.3200, 123.9180],
+  "Kasambagan":           [10.3350, 123.9200],
+  "Labangon":             [10.2980, 123.8780],
+  "T. Padilla":           [10.3180, 123.9150],
+  "Apas":                 [10.3250, 123.9000],
+  "Capitol Site":         [10.3150, 123.8950],
+  "Guadalupe":            [10.3050, 123.8850],
+  "Sambag I":             [10.3100, 123.8880],
+  "Sambag II":            [10.3080, 123.8860],
+  "San Nicolas":          [10.2930, 123.8840],
+  "Cogon Ramos":          [10.3000, 123.8980],
+  "Bakilid (Mandaue)":    [10.3500, 123.9350],
+  "Subangdaku (Mandaue)": [10.3300, 123.9300],
+  "Tipolo (Mandaue)":     [10.3480, 123.9250],
+  "Looc (Mandaue)":       [10.3420, 123.9400],
+  "Pusok (Lapu-Lapu)":    [10.3050, 123.9700],
+  "Basak (Lapu-Lapu)":    [10.2930, 123.9600],
+  "Mactan (Lapu-Lapu)":   [10.3100, 123.9800],
+  "Maribago (Lapu-Lapu)": [10.2800, 123.9800],
+  "San Isidro (Talisay)": [10.2450, 123.8480],
+  "Poblacion (Talisay)":  [10.2444, 123.8500],
+  "Linao (Talisay)":      [10.2600, 123.8400],
+  "Consolacion":          [10.3780, 123.9570],
+  "Liloan":               [10.4000, 123.9900],
+};
+
+let data = [], markers = [], selected = null, map;
+
+const pinIcon = L.divIcon({
+  className: '',
+  iconSize: [30,38], iconAnchor: [15,38],
+  html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#22c97a;border:2.5px solid rgba(255,255,255,0.85);box-shadow:0 3px 12px rgba(34,201,122,0.45)"></div>`
+});
+
+// ── Fetch ──────────────────────────────────────────────────────────────────────
+async function fetchListings() {
+  try {
+    const res  = await fetch(API_URL);
+    const rows = await res.json();
+    if (rows.error) throw new Error(rows.error);
+
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    data = rows.filter(r => r.lat && r.lng).map((r, i) => ({ ...r, id: i + 1 }));
+    document.getElementById('count').textContent = data.length;
+
+    data.forEach(d => {
+      const m = L.marker([d.lat, d.lng], { icon: pinIcon }).addTo(map);
+      m.on('click', () => select(d.id));
+      markers.push(m);
+    });
+
+    if (markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.15));
+    }
+
+    renderCards();
+  } catch(e) {
+    document.getElementById('cards').innerHTML =
+      `<div class="empty-state"><strong>Could not load listings</strong>${esc(e.message)}</div>`;
+  }
+}
+
+// ── Cards ──────────────────────────────────────────────────────────────────────
+function renderCards() {
+  const el = document.getElementById('cards');
+  if (!data.length) {
+    el.innerHTML = `<div class="empty-state"><strong>No listings yet</strong>Be the first to share your solar energy with the Cebu community!</div>`;
+    return;
+  }
+  el.innerHTML = '';
+  data.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'card' + (selected === d.id ? ' active' : '');
+    div.onclick = () => select(d.id);
+    div.innerHTML = `
+      <div class="card-name">${esc(d.name)}</div>
+      <div class="card-place">${esc(d.barangay)}</div>
+      <div class="card-tags">${typeTags(d.charger_type)}</div>`;
+    el.appendChild(div);
+  });
+}
+
+// ── Select ─────────────────────────────────────────────────────────────────────
+function select(id) {
+  selected = id;
+  renderCards();
+  const d = data.find(x => x.id === id);
+  map.flyTo([d.lat, d.lng], 15, { duration: 0.7 });
+  document.getElementById('p-name').textContent    = d.name;
+  document.getElementById('p-address').textContent = d.address;
+  document.getElementById('p-chips').innerHTML     = typeChips(d.charger_type);
+  document.getElementById('p-note').textContent    = d.notes || 'Contact this owner to ask about availability and access.';
+  document.getElementById('popup').classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('popup').classList.remove('open');
+  selected = null;
+  renderCards();
+}
+
+// ── Contact modal ──────────────────────────────────────────────────────────────
+function openContact() {
+  const d = data.find(x => x.id === selected);
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-name">Contact ${esc(d.name)}</div>
+    <div class="modal-sub">Reach out about their solar energy or EV charger — availability, pricing, and how to arrange access.</div>
+    ${d.contact ? `<div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Owner's contact</div>
+      <strong style="color:var(--green)">${esc(d.contact)}</strong>
+    </div>` : ''}
+    <div class="field"><label>Your name</label><input type="text" id="f-name" placeholder="e.g. Juan dela Cruz"/></div>
+    <div class="field"><label>Your contact</label><input type="text" id="f-from" placeholder="e.g. 09XX-XXX-XXXX"/></div>
+    <div class="field"><label>Message</label><textarea id="f-msg" placeholder="Hi! I saw your listing on SolarShare EV Cebu..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-send" onclick="sendContact()">Send</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function sendContact() {
+  const name = document.getElementById('f-name').value.trim();
+  const from = document.getElementById('f-from').value.trim();
+  const msg  = document.getElementById('f-msg').value.trim();
+  if (!name || !from || !msg) { alert('Please fill in all fields.'); return; }
+  document.getElementById('modal').innerHTML = `
+    <div class="success">
+      <div class="icon">&#10003;</div>
+      <h3>Done!</h3>
+      <p>Messaging will be fully wired up soon.<br>For now, reach the owner directly using the contact info shown.</p>
+      <button onclick="closeModal()">Close</button>
+    </div>`;
+}
+
+// ── Register modal ─────────────────────────────────────────────────────────────
+function showRegister() {
+  const opts = Object.keys(BARANGAY_COORDS).map(b => `<option value="${b}">${b}</option>`).join('');
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-name">List your home</div>
+    <div class="modal-sub">Share your solar energy or EV charger with your Cebu community. Free to list.</div>
+    <div class="field"><label>Your name</label><input type="text" id="r-name" placeholder="e.g. Mang Romy Bacalso"/></div>
+    <div class="field"><label>Full address</label><input type="text" id="r-address" placeholder="e.g. 12 Nivel Hills, Lahug, Cebu City"/></div>
+    <div class="field">
+      <label>Barangay</label>
+      <select id="r-barangay" onchange="autoCoords()">
+        <option value="">-- Select barangay --</option>${opts}
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Latitude</label><input type="number" id="r-lat" step="0.0001" placeholder="10.3322"/></div>
+      <div class="field"><label>Longitude</label><input type="number" id="r-lng" step="0.0001" placeholder="123.9050"/></div>
+    </div>
+    <button class="geo-btn" onclick="useLocation()">&#128205; Use my current location</button>
+    <div style="margin-top:14px"></div>
+    <div class="field">
+      <label>What are you sharing?</label>
+      <select id="r-type">
+        <option value="Both">Both — Solar energy &amp; EV charger</option>
+        <option value="Solar">Solar energy only</option>
+        <option value="EV Charger">EV charger only</option>
+      </select>
+    </div>
+    <div class="field"><label>Availability &amp; notes</label><textarea id="r-notes" placeholder="e.g. Free for neighbors, AC 7kW, weekends only..."></textarea></div>
+    <div class="field"><label>Your contact (phone or email)</label><input type="text" id="r-contact" placeholder="e.g. 09XX-XXX-XXXX"/></div>
+    <div id="r-err" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-send" id="r-btn" onclick="submitListing()">Add to map</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function autoCoords() {
+  const b = document.getElementById('r-barangay').value;
+  if (BARANGAY_COORDS[b]) {
+    document.getElementById('r-lat').value = BARANGAY_COORDS[b][0];
+    document.getElementById('r-lng').value = BARANGAY_COORDS[b][1];
+  }
+}
+
+function useLocation() {
+  if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      document.getElementById('r-lat').value = p.coords.latitude.toFixed(5);
+      document.getElementById('r-lng').value = p.coords.longitude.toFixed(5);
+    },
+    () => alert('Could not get location. Enter coordinates manually.')
+  );
+}
+
+async function submitListing() {
+  const name     = document.getElementById('r-name').value.trim();
+  const address  = document.getElementById('r-address').value.trim();
+  const barangay = document.getElementById('r-barangay').value;
+  const lat      = parseFloat(document.getElementById('r-lat').value);
+  const lng      = parseFloat(document.getElementById('r-lng').value);
+  const type     = document.getElementById('r-type').value;
+  const notes    = document.getElementById('r-notes').value.trim();
+  const contact  = document.getElementById('r-contact').value.trim();
+  const errEl    = document.getElementById('r-err');
+
+  if (!name || !address || !barangay || !lat || !lng || !contact) {
+    errEl.textContent = 'Please fill in all required fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('r-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  errEl.style.display = 'none';
+
+  try {
+    // Apps Script doesn't support CORS on POST, so we use no-cors + text/plain
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ name, address, barangay, lat, lng, charger_type: type, notes, contact }),
+    });
+
+    document.getElementById('modal').innerHTML = `
+      <div class="success">
+        <div class="icon">&#9889;</div>
+        <h3>You're on the map!</h3>
+        <p>Thank you, <strong style="color:var(--text)">${esc(name)}</strong>.<br>Your listing is now live for the Cebu community.</p>
+        <button onclick="closeModal(); fetchListings()">See the map</button>
+      </div>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Add to map';
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+function typeTags(t) {
+  t = (t||'').toLowerCase();
+  let o = '';
+  if (t.includes('solar')||t.includes('both')) o += '<span class="tag">&#9728; Solar</span>';
+  if (t.includes('ev')||t.includes('charger')||t.includes('both')) o += '<span class="tag">&#9889; EV</span>';
+  return o || `<span class="tag">${esc(t)}</span>`;
+}
+
+function typeChips(t) {
+  t = (t||'').toLowerCase();
+  let o = '';
+  if (t.includes('solar')||t.includes('both')) o += '<span class="chip">&#9728; Solar panels</span>';
+  if (t.includes('ev')||t.includes('charger')||t.includes('both')) o += '<span class="chip">&#9889; EV charger</span>';
+  return o || `<span class="chip">${esc(t)}</span>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  map = L.map('map', { center: [10.3157, 123.8854], zoom: 13 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  fetchListings();
+
+  document.getElementById('overlay').addEventListener('click', e => {
+    if (e.target.id === 'overlay') closeModal();
+  });
+};
+</script>
+</body>
+</html>
