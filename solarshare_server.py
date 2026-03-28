@@ -143,15 +143,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path in ("/", "/solarshare"):
+        clean = urlparse(self.path).path  # strip ?fbclid=... and other query params
+
+        # Block direct access to sensitive files
+        blocked = {"/credentials.json", "/.env"}
+        if clean in blocked or clean.endswith(".py"):
+            self.send_response(403)
+            self.end_headers()
+            return
+
+        if clean in ("/", "/solarshare"):
             self.path = "/solarshare.html"
             return super().do_GET()
 
-        if self.path == "/listings":
+        if clean == "/listings":
             self._serve_listings()
             return
 
-        if self.path.startswith("/approve"):
+        if clean.startswith("/approve"):
             self._handle_approve()
             return
 
