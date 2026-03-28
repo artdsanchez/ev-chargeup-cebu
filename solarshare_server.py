@@ -34,6 +34,7 @@ GMAIL_USER         = os.environ.get("GMAIL_USER", "shanes.solar.solutions@gmail.
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 PORT = int(os.environ.get("PORT", 8766))
+BASE_URL = os.environ.get("BASE_URL", f"http://localhost:{os.environ.get('PORT', '8766')}")
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 CREDENTIALS_FILE = os.environ.get("CREDENTIALS_FILE", os.path.join(PROJECT_DIR, "credentials.json"))
 
@@ -202,7 +203,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 datetime.now().strftime("%Y-%m-%d"),
                 "No",
             ])
-            approve_url = f"http://localhost:{PORT}/approve?name={quote(body.get('name', '').strip())}"
+            approve_url = f"{BASE_URL}/approve?name={quote(body.get('name', '').strip())}"
             send_admin_notification(body, approve_url)
             self._json(200, {"status": "ok"})
         except Exception as e:
