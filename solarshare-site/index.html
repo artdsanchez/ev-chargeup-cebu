@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SolarShare EV Cebu</title>
+<title>EV-ChargeUp Cebu</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --green: #22c97a;
+    --green-dim: #17a362;
     --dark: #0E0F0D;
     --card: #141613;
     --card2: #1b1e1a;
@@ -18,25 +19,33 @@
     --text: #EEEbE4;
     --muted: #7a7e79;
   }
-  body { font-family:'DM Sans',sans-serif; background:var(--dark); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  body { font-family:'Inter',sans-serif; background:var(--dark); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
-  header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:52px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; z-index:1000; }
-  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; display:flex; align-items:center; gap:9px; }
+  /* HEADER */
+  header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:64px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; z-index:1000; }
+  .logo { font-family:'Nunito',sans-serif; font-weight:900; font-size:24px; display:flex; align-items:center; gap:9px; }
   .logo-icon { width:28px; height:28px; background:var(--green); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; }
   .logo em { color:var(--green); font-style:normal; }
-  .list-btn { padding:7px 18px; border-radius:20px; border:1px solid var(--green); background:transparent; color:var(--green); font-family:'Syne',sans-serif; font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s; }
+  .list-btn { padding:7px 18px; border-radius:20px; border:1px solid var(--green); background:transparent; color:var(--green); font-family:'Inter',sans-serif; font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s; }
   .list-btn:hover { background:var(--green); color:#000; }
 
+  /* LAYOUT */
   .main { display:flex; flex:1; overflow:hidden; position:relative; }
   #map { flex:1; }
   .leaflet-tile { filter:brightness(0.6) saturate(0.35); }
 
+  /* SIDEBAR */
   .sidebar { width:290px; background:var(--card); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
   .sidebar-top { padding:16px 18px 12px; border-bottom:1px solid var(--border); }
   .sidebar-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:3px; }
-  .sidebar-count { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; }
+  .sidebar-count { font-family:'Inter',sans-serif; font-size:20px; font-weight:800; }
   .sidebar-count em { color:var(--green); font-style:normal; }
   .sidebar-sub { font-size:11px; color:var(--muted); margin-top:3px; }
+
+  .filter-bar { display:flex; gap:6px; padding:10px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .filter-btn { flex:1; padding:6px 4px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .filter-btn.active { background:var(--green); color:#000; border-color:var(--green); }
+  .filter-btn:hover:not(.active) { border-color:rgba(34,201,122,0.35); color:var(--text); }
 
   .cards { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:6px; }
   .cards::-webkit-scrollbar { width:3px; }
@@ -45,34 +54,37 @@
   .card { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:13px 14px; cursor:pointer; transition:border-color 0.15s, transform 0.15s; }
   .card:hover { border-color:rgba(34,201,122,0.35); transform:translateX(-2px); }
   .card.active { border-color:var(--green); background:rgba(34,201,122,0.05); }
-  .card-name { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; margin-bottom:2px; }
+  .card-name { font-family:'Inter',sans-serif; font-weight:700; font-size:13px; margin-bottom:2px; }
   .card-place { font-size:11px; color:var(--muted); margin-bottom:8px; }
   .card-tags { display:flex; gap:5px; flex-wrap:wrap; }
   .tag { font-size:10px; font-weight:500; padding:2px 9px; border-radius:20px; background:rgba(34,201,122,0.14); color:var(--green); }
 
-  .empty-state { padding:40px 18px; text-align:center; color:var(--muted); font-size:13px; line-height:1.7; }
-  .empty-state strong { display:block; font-family:'Syne',sans-serif; font-size:14px; color:var(--text); margin-bottom:6px; }
+  .empty-state { padding:40px 18px; text-align:center; color:var(--muted); font-size:13px; line-height:1.6; }
+  .empty-state strong { display:block; font-family:'Inter',sans-serif; font-size:15px; color:var(--text); margin-bottom:6px; }
 
+  /* POPUP */
   .popup { position:absolute; bottom:0; left:0; right:290px; background:var(--card); border-top:1px solid var(--border); padding:22px 26px 26px; z-index:999; transform:translateY(100%); transition:transform 0.28s cubic-bezier(0.4,0,0.2,1); }
   .popup.open { transform:translateY(0); }
-  .popup-close { position:absolute; top:16px; right:20px; width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--card2); color:var(--muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:color 0.15s; }
+  .popup-close { position:absolute; top:16px; right:20px; width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--card2); color:var(--muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:color 0.15s; line-height:1; }
   .popup-close:hover { color:var(--text); }
-  .popup-name { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; margin-bottom:3px; }
+  .popup-name { font-family:'Inter',sans-serif; font-weight:800; font-size:20px; margin-bottom:3px; }
   .popup-address { font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .popup-note { font-size:13px; color:var(--text); margin-bottom:18px; opacity:0.75; line-height:1.5; }
+  .popup-price-note { font-size:11px; color:var(--muted); margin-top:-8px; margin-bottom:14px; line-height:1.5; opacity:0.7; }
   .popup-chips { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
   .chip { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; background:rgba(34,201,122,0.12); color:var(--green); border:1px solid rgba(34,201,122,0.25); }
-  .popup-note { font-size:13px; color:var(--text); margin-bottom:18px; opacity:0.75; line-height:1.5; }
-  .contact-btn { padding:11px 28px; border-radius:8px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:opacity 0.2s; }
+  .contact-btn { padding:11px 28px; border-radius:8px; border:none; background:var(--green); color:#000; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:opacity 0.2s; }
   .contact-btn:hover { opacity:0.85; }
 
+  /* MODAL */
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:2000; display:none; align-items:center; justify-content:center; }
   .overlay.open { display:flex; }
   .modal { background:var(--card); border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:26px; width:400px; max-width:94vw; max-height:90vh; overflow-y:auto; }
-  .modal-name { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; margin-bottom:4px; }
+  .modal-name { font-family:'Inter',sans-serif; font-weight:800; font-size:17px; margin-bottom:4px; }
   .modal-sub { font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
   .field { margin-bottom:13px; }
   .field label { display:block; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-bottom:5px; }
-  .field input, .field textarea, .field select { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:7px; padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color 0.15s; }
+  .field input, .field textarea, .field select { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:7px; padding:9px 12px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; outline:none; transition:border-color 0.15s; }
   .field select { cursor:pointer; }
   .field select option { background:var(--card2); }
   .field input:focus, .field textarea:focus, .field select:focus { border-color:var(--green); }
@@ -80,18 +92,30 @@
   .field-row { display:flex; gap:8px; }
   .field-row .field { flex:1; }
   .modal-actions { display:flex; gap:8px; margin-top:16px; }
-  .btn-cancel { flex:1; padding:10px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+  .btn-cancel { flex:1; padding:10px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; transition:color 0.15s; }
   .btn-cancel:hover { color:var(--text); }
-  .btn-send { flex:2; padding:10px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:opacity 0.2s; }
+  .btn-send { flex:2; padding:10px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Inter',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:opacity 0.2s; }
   .btn-send:hover { opacity:0.85; }
   .btn-send:disabled { opacity:0.5; cursor:not-allowed; }
-  .geo-btn { font-size:11px; color:var(--green); background:none; border:none; cursor:pointer; padding:0; margin-top:4px; text-decoration:underline; }
-  .form-error { font-size:12px; color:#f87171; margin-top:10px; text-align:center; }
   .success { text-align:center; padding:8px 0; }
   .success .icon { font-size:36px; margin-bottom:10px; }
-  .success h3 { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; margin-bottom:6px; }
+  .success h3 { font-family:'Inter',sans-serif; font-weight:800; font-size:17px; margin-bottom:6px; }
   .success p { font-size:12px; color:var(--muted); line-height:1.6; }
-  .success button { margin-top:18px; padding:10px 28px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
+  .success button { margin-top:18px; padding:10px 28px; border-radius:7px; border:none; background:var(--green); color:#000; font-family:'Inter',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
+  .geo-btn { font-size:11px; color:var(--green); background:none; border:none; cursor:pointer; padding:0; margin-top:4px; text-decoration:underline; }
+  .form-error { font-size:12px; color:#f87171; margin-top:10px; text-align:center; }
+  .section-divider { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--green); margin:16px 0 10px; border-bottom:1px solid rgba(34,201,122,0.2); padding-bottom:6px; }
+  .day-grid { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .day-label { display:flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; transition:all 0.15s; user-select:none; }
+  .day-label:has(input:checked) { border-color:var(--green); color:var(--green); background:rgba(34,201,122,0.08); }
+  .day-label input { accent-color:var(--green); }
+  .hours-note { font-size:11px; color:var(--muted); background:rgba(34,201,122,0.06); border:1px solid rgba(34,201,122,0.15); border-radius:6px; padding:8px 10px; margin-top:8px; line-height:1.5; }
+
+  /* MISSION FOOTER */
+  .mission { padding:14px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+  .mission-text { font-size:11px; line-height:1.6; color:var(--text); }
+  .mission-text strong { display:block; font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .mission-text em { color:var(--muted); font-style:normal; opacity:0.65; }
 </style>
 </head>
 <body>
@@ -99,93 +123,463 @@
 <header>
   <div class="logo">
     <div class="logo-icon">&#9889;</div>
-    Solar<em>Share EV</em> Cebu
+    EV - <em>ChargeUp</em> Cebu
   </div>
   <button class="list-btn" onclick="showRegister()">+ List my home</button>
 </header>
 
 <div class="main">
   <div id="map"></div>
+
   <div class="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-label">Community map</div>
       <div class="sidebar-count"><em id="count">&#8212;</em> homes listed</div>
-      <div class="sidebar-sub">Solar panels &middot; EV charger &middot; Cebu</div>
+      <div class="sidebar-sub">EV charger &middot; Solar energy &middot; Cebu</div>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('grid',this)">&#9889; Grid</button>
+      <button class="filter-btn" onclick="setFilter('solar',this)">&#9728; Solar</button>
     </div>
     <div class="cards" id="cards">
-      <div class="empty-state">Loading&hellip;</div>
+      <div class="empty-state">Loading listings&hellip;</div>
+    </div>
+    <div class="mission">
+      <div class="mission-text">
+        <strong>Our Mission</strong>
+        To make EV charging accessible to every Cebuano by connecting neighbors who share their solar and grid power &mdash; one charge at a time.
+        <br><br>
+        <em>This platform is currently free for the community. We cannot guarantee it will stay free forever, but we will always let you know before anything changes.</em>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- Detail popup -->
 <div class="popup" id="popup">
   <button class="popup-close" onclick="closePopup()">&#215;</button>
   <div class="popup-name" id="p-name"></div>
   <div class="popup-address" id="p-address"></div>
   <div class="popup-chips" id="p-chips"></div>
+  <div class="popup-price-note">Rates shown are indicative. Final price is at the owner&#8217;s discretion &#8212; confirm via direct contact.</div>
   <div class="popup-note" id="p-note"></div>
-  <button class="contact-btn" onclick="openContact()">Contact owner &rarr;</button>
+  <button class="contact-btn" onclick="openContactModal()">Contact owner &rarr;</button>
 </div>
 
+<!-- Modal (shared for contact + register) -->
 <div class="overlay" id="overlay">
   <div class="modal" id="modal"></div>
 </div>
 
 <script>
-// Set by deploy.sh — do not edit manually
-const API_URL = "SOLARSHARE_API_URL";
-
-const BARANGAY_COORDS = {
-  "Lahug":                [10.3322, 123.9050],
-  "Banilad":              [10.3410, 123.9020],
-  "Camputhaw":            [10.3280, 123.9100],
-  "Pardo":                [10.2950, 123.8900],
-  "Talamban":             [10.3600, 123.9150],
-  "Mabolo":               [10.3200, 123.9180],
-  "Kasambagan":           [10.3350, 123.9200],
-  "Labangon":             [10.2980, 123.8780],
-  "T. Padilla":           [10.3180, 123.9150],
-  "Apas":                 [10.3250, 123.9000],
-  "Capitol Site":         [10.3150, 123.8950],
-  "Guadalupe":            [10.3050, 123.8850],
-  "Sambag I":             [10.3100, 123.8880],
-  "Sambag II":            [10.3080, 123.8860],
-  "San Nicolas":          [10.2930, 123.8840],
-  "Cogon Ramos":          [10.3000, 123.8980],
-  "Bakilid (Mandaue)":    [10.3500, 123.9350],
-  "Subangdaku (Mandaue)": [10.3300, 123.9300],
-  "Tipolo (Mandaue)":     [10.3480, 123.9250],
-  "Looc (Mandaue)":       [10.3420, 123.9400],
-  "Pusok (Lapu-Lapu)":    [10.3050, 123.9700],
-  "Basak (Lapu-Lapu)":    [10.2930, 123.9600],
-  "Mactan (Lapu-Lapu)":   [10.3100, 123.9800],
-  "Maribago (Lapu-Lapu)": [10.2800, 123.9800],
-  "San Isidro (Talisay)": [10.2450, 123.8480],
-  "Poblacion (Talisay)":  [10.2444, 123.8500],
-  "Linao (Talisay)":      [10.2600, 123.8400],
-  "Consolacion":          [10.3780, 123.9570],
-  "Liloan":               [10.4000, 123.9900],
+// ── Barangay → approximate coordinates ────────────────────────────────────────
+const MUNICIPALITY_BARANGAYS = {
+  "Alcoy": {
+    "Dawis":      [9.718, 123.498],
+    "Lantawan":   [9.725, 123.502],
+    "Poblacion":  [9.722, 123.500],
+  },
+  "Alegria": {
+    "Compostela": [9.755, 123.352],
+    "Poblacion":  [9.752, 123.348],
+    "Tangbo":     [9.758, 123.355],
+  },
+  "Aloguinsan": {
+    "Angilan":    [10.246, 123.646],
+    "Cabiangon":  [10.242, 123.640],
+    "Poblacion":  [10.250, 123.648],
+  },
+  "Argao": {
+    "Can-Abuhon": [9.880, 123.598],
+    "Langtad":    [9.883, 123.600],
+    "Poblacion":  [9.882, 123.604],
+    "Talayong":   [9.878, 123.595],
+  },
+  "Asturias": {
+    "Buanoy":    [10.499, 123.718],
+    "Cambuhawe": [10.512, 123.705],
+    "Poblacion": [10.522, 123.710],
+  },
+  "Badian": {
+    "Alcosiba":  [9.862, 123.370],
+    "Patong":    [9.868, 123.375],
+    "Poblacion": [9.865, 123.368],
+  },
+  "Balamban": {
+    "Buanoy":    [10.480, 123.724],
+    "Cantibas":  [10.490, 123.730],
+    "Poblacion": [10.498, 123.718],
+    "Prenza":    [10.485, 123.720],
+  },
+  "Bantayan": {
+    "Atop-atop": [11.168, 123.738],
+    "Baigad":    [11.175, 123.742],
+    "Bantigue":  [11.170, 123.730],
+    "Poblacion": [11.170, 123.724],
+    "Sillon":    [11.165, 123.715],
+    "Sulangan":  [11.160, 123.710],
+  },
+  "Barili": {
+    "Gunting":   [10.120, 123.530],
+    "Luut":      [10.115, 123.522],
+    "Poblacion": [10.118, 123.527],
+    "Tubod":     [10.122, 123.532],
+  },
+  "Bogo City": {
+    "Carbon":       [11.046, 124.003],
+    "La Paz":       [11.050, 124.000],
+    "Poblacion I":  [11.052, 124.005],
+    "Poblacion II": [11.053, 124.007],
+    "Tapilon":      [11.058, 124.010],
+  },
+  "Borbon": {
+    "Canlumacad": [10.823, 124.022],
+    "Poblacion":  [10.820, 124.020],
+    "Tindog":     [10.825, 124.018],
+  },
+  "Carcar City": {
+    "Bolinawan":    [10.103, 123.645],
+    "Bolo":         [10.105, 123.640],
+    "Can-Asujan":   [10.108, 123.650],
+    "Cansaya":      [10.100, 123.638],
+    "Poblacion I":  [10.108, 123.643],
+    "Poblacion II": [10.107, 123.642],
+  },
+  "Carmen": {
+    "Baring":    [10.583, 124.008],
+    "Corte":     [10.580, 124.005],
+    "Poblacion": [10.582, 124.010],
+  },
+  "Catmon": {
+    "Anapog":    [10.726, 124.012],
+    "Poblacion": [10.730, 124.015],
+    "Tinabuyan": [10.722, 124.010],
+  },
+  "Cebu City": {
+    "Apas":          [10.325, 123.900],
+    "Bacayan":       [10.370, 123.915],
+    "Banilad":       [10.341, 123.902],
+    "Busay":         [10.370, 123.895],
+    "Calamba":       [10.308, 123.890],
+    "Camputhaw":     [10.328, 123.910],
+    "Capitol Site":  [10.315, 123.895],
+    "Cogon Ramos":   [10.300, 123.898],
+    "Ermita":        [10.295, 123.898],
+    "Guadalupe":     [10.305, 123.885],
+    "Inayawan":      [10.278, 123.878],
+    "Kasambagan":    [10.335, 123.920],
+    "Labangon":      [10.298, 123.878],
+    "Lahug":         [10.332, 123.905],
+    "Lorega":        [10.295, 123.892],
+    "Mabolo":        [10.320, 123.918],
+    "Mambaling":     [10.292, 123.880],
+    "Pardo":         [10.295, 123.890],
+    "Pasil":         [10.300, 123.908],
+    "Pit-os":        [10.372, 123.905],
+    "Punta Princesa":[10.288, 123.868],
+    "Quiot":         [10.278, 123.875],
+    "Sambag I":      [10.310, 123.888],
+    "Sambag II":     [10.308, 123.886],
+    "San Nicolas":   [10.293, 123.884],
+    "Sirao":         [10.383, 123.895],
+    "T. Padilla":    [10.318, 123.915],
+    "Talamban":      [10.360, 123.915],
+    "Tinago":        [10.298, 123.903],
+    "Zapatera":      [10.298, 123.895],
+  },
+  "Compostela": {
+    "Bagalnga":  [10.447, 124.008],
+    "Buyog":     [10.450, 124.012],
+    "Poblacion": [10.448, 124.010],
+  },
+  "Consolacion": {
+    "Cabangahan":     [10.392, 123.958],
+    "Cansaga":        [10.387, 123.942],
+    "Danglag":        [10.384, 123.938],
+    "Garing":         [10.395, 123.946],
+    "Jugan":          [10.379, 123.946],
+    "Lamac":          [10.402, 123.949],
+    "Lamintak Norte": [10.405, 123.935],
+    "Lamintak Sur":   [10.400, 123.938],
+    "Nangka":         [10.396, 123.954],
+    "Pitalo":         [10.383, 123.954],
+    "Poblacion Occ.": [10.377, 123.952],
+    "Poblacion Or.":  [10.378, 123.953],
+    "Polog":          [10.375, 123.948],
+    "Pulpog":         [10.376, 123.944],
+    "Sacsac":         [10.371, 123.944],
+    "Tayud":          [10.390, 123.950],
+    "Tugbongan":      [10.382, 123.947],
+  },
+  "Cordova": {
+    "Alegria":   [10.255, 123.962],
+    "Buagsong":  [10.257, 123.970],
+    "Cogon":     [10.260, 123.965],
+    "Gabi":      [10.265, 123.975],
+    "Ibabao":    [10.268, 123.978],
+    "Poblacion": [10.261, 123.962],
+    "San Miguel":[10.263, 123.956],
+  },
+  "Daanbantayan": {
+    "Aguho":     [11.288, 124.005],
+    "Bagay":     [11.295, 124.000],
+    "Poblacion": [11.290, 124.002],
+    "Tinubdan":  [11.285, 124.015],
+  },
+  "Dalaguete": {
+    "Ablayan":   [9.762, 123.538],
+    "Cambito":   [9.770, 123.545],
+    "Poblacion": [9.766, 123.541],
+  },
+  "Danao City": {
+    "Bagay":     [10.510, 124.012],
+    "Bungahan":  [10.525, 123.998],
+    "Cagat":     [10.533, 124.020],
+    "Poblacion": [10.522, 124.018],
+    "Taboc":     [10.515, 124.008],
+  },
+  "Dumanjug": {
+    "Catadman":    [10.058, 123.472],
+    "Mantalongon": [10.050, 123.478],
+    "Poblacion":   [10.055, 123.470],
+  },
+  "Ginatilan": {
+    "Cagsing":   [9.598, 123.330],
+    "Guadalupe": [9.602, 123.335],
+    "Poblacion": [9.600, 123.332],
+  },
+  "Lapu-Lapu City": {
+    "Babag":         [10.298, 123.968],
+    "Basak":         [10.293, 123.960],
+    "Gun-ob":        [10.302, 123.975],
+    "Mactan":        [10.310, 123.980],
+    "Maribago":      [10.280, 123.980],
+    "Marigondon":    [10.272, 123.988],
+    "Pajac":         [10.305, 123.962],
+    "Poblacion":     [10.312, 123.960],
+    "Punta Engaño":  [10.290, 124.001],
+    "Pusok":         [10.305, 123.970],
+  },
+  "Liloan": {
+    "Catarman":    [10.425, 123.988],
+    "Cotcot":      [10.415, 123.984],
+    "Jubay":       [10.420, 124.002],
+    "Lataban":     [10.410, 123.992],
+    "Mulao":       [10.408, 123.980],
+    "Poblacion":   [10.406, 123.996],
+    "San Roque":   [10.400, 123.987],
+    "San Vicente": [10.398, 123.990],
+    "Santa Cruz":  [10.412, 124.005],
+    "Tabla":       [10.418, 123.995],
+    "Yati":        [10.414, 124.008],
+  },
+  "Madridejos": {
+    "Bunakan":   [11.265, 123.728],
+    "Kangwayan": [11.258, 123.720],
+    "Poblacion": [11.262, 123.725],
+  },
+  "Malabuyoc": {
+    "Armeña":    [9.683, 123.383],
+    "Batan":     [9.688, 123.388],
+    "Poblacion": [9.685, 123.380],
+  },
+  "Mandaue City": {
+    "Alang-alang":     [10.358, 123.940],
+    "Bakilid":         [10.350, 123.935],
+    "Banilad":         [10.348, 123.930],
+    "Basak":           [10.335, 123.940],
+    "Cabancalan":      [10.360, 123.932],
+    "Casili":          [10.368, 123.938],
+    "Casuntingan":     [10.370, 123.935],
+    "Centro":          [10.332, 123.942],
+    "Ibabao-Estancia": [10.340, 123.948],
+    "Jagobiao":        [10.345, 123.932],
+    "Labogon":         [10.355, 123.946],
+    "Looc":            [10.342, 123.940],
+    "Maguikay":        [10.338, 123.932],
+    "Subangdaku":      [10.330, 123.930],
+    "Tabok":           [10.365, 123.928],
+    "Tipolo":          [10.348, 123.925],
+    "Umapad":          [10.362, 123.955],
+  },
+  "Medellin": {
+    "Antipolo":    [11.125, 123.960],
+    "Daanlungsod": [11.128, 123.958],
+    "Poblacion":   [11.126, 123.962],
+  },
+  "Minglanilla": {
+    "Cadulawan":        [10.248, 123.792],
+    "Linao":            [10.245, 123.797],
+    "Pakigne":          [10.240, 123.790],
+    "Poblacion Ward I": [10.242, 123.795],
+    "Tungkop":          [10.250, 123.800],
+  },
+  "Moalboal": {
+    "Basdiot":          [9.934, 123.395],
+    "Batadbatad":       [9.940, 123.400],
+    "Poblacion East":   [9.937, 123.398],
+    "Poblacion West":   [9.936, 123.396],
+    "Saavedra":         [9.930, 123.390],
+  },
+  "Naga City": {
+    "Bairan":    [10.210, 123.762],
+    "Inayagan":  [10.218, 123.755],
+    "Langtad":   [10.215, 123.760],
+    "Lutopan":   [10.205, 123.748],
+    "Poblacion": [10.212, 123.757],
+    "Uling":     [10.220, 123.765],
+  },
+  "Oslob": {
+    "Boljoon":   [9.554, 123.438],
+    "Poblacion": [9.551, 123.435],
+    "Tan-awan":  [9.545, 123.442],
+    "Tumalog":   [9.558, 123.440],
+  },
+  "Pilar": {
+    "Bugho":     [10.680, 124.348],
+    "Cawit":     [10.678, 124.352],
+    "Poblacion": [10.682, 124.350],
+  },
+  "Poro": {
+    "Eastern Poblacion": [10.632, 124.380],
+    "Panatao":           [10.628, 124.375],
+    "Western Poblacion": [10.630, 124.376],
+  },
+  "Ronda": {
+    "Cangcao":   [9.998, 123.418],
+    "Capio-an":  [10.002, 123.420],
+    "Poblacion": [10.000, 123.422],
+  },
+  "Samboan": {
+    "Cambanog":  [9.520, 123.328],
+    "Colase":    [9.515, 123.322],
+    "Poblacion": [9.518, 123.325],
+  },
+  "San Fernando": {
+    "Balud":     [10.168, 123.712],
+    "Bugho":     [10.172, 123.715],
+    "Poblacion": [10.170, 123.710],
+    "Tindog":    [10.165, 123.708],
+  },
+  "San Francisco": {
+    "Bongdo":     [10.648, 124.428],
+    "Daan Paz":   [10.652, 124.432],
+    "Poblacion":  [10.650, 124.430],
+    "San Isidro": [10.645, 124.425],
+  },
+  "San Remigio": {
+    "Antipolo":  [10.972, 124.000],
+    "Poblacion": [10.975, 123.998],
+    "Suba":      [10.970, 124.002],
+  },
+  "Santa Fe": {
+    "Balidbid":  [11.155, 123.800],
+    "Okoy":      [11.152, 123.795],
+    "Poblacion": [11.150, 123.798],
+  },
+  "Santander": {
+    "Balud":     [9.432, 123.452],
+    "Bunlan":    [9.428, 123.448],
+    "Poblacion": [9.430, 123.450],
+  },
+  "Sibonga": {
+    "Abugon":    [10.038, 123.578],
+    "Cantuod":   [10.042, 123.582],
+    "Poblacion": [10.040, 123.580],
+  },
+  "Sogod": {
+    "Cadaruhan": [11.032, 124.040],
+    "Poblacion": [11.030, 124.038],
+    "Sudlonon":  [11.035, 124.042],
+  },
+  "Tabogon": {
+    "Cawit":     [10.872, 124.042],
+    "Ilihan":    [10.868, 124.038],
+    "Poblacion": [10.870, 124.040],
+  },
+  "Tabuelan": {
+    "Cantabaco": [11.002, 123.832],
+    "Poblacion": [11.000, 123.828],
+    "Tapilon":   [11.005, 123.835],
+  },
+  "Talisay City": {
+    "Biasong":    [10.258, 123.838],
+    "Bulacao":    [10.265, 123.845],
+    "Cansojong":  [10.252, 123.835],
+    "Dumlog":     [10.255, 123.840],
+    "Lagtang":    [10.260, 123.830],
+    "Lawaan I":   [10.270, 123.850],
+    "Linao":      [10.260, 123.840],
+    "Maghaway":   [10.248, 123.832],
+    "Mohon":      [10.275, 123.855],
+    "Poblacion":  [10.244, 123.850],
+    "San Isidro": [10.245, 123.848],
+    "San Roque":  [10.268, 123.842],
+  },
+  "Toledo City": {
+    "Bato":                     [10.378, 123.642],
+    "Dakit":                    [10.382, 123.645],
+    "Don Andres Soriano":       [10.375, 123.638],
+    "Ilihan":                   [10.370, 123.632],
+    "Luray I":                  [10.385, 123.650],
+    "Poblacion":                [10.380, 123.640],
+    "Poog":                     [10.376, 123.636],
+    "Sangi":                    [10.390, 123.655],
+  },
+  "Tudela": {
+    "Calmante":  [10.702, 124.418],
+    "Lugo":      [10.698, 124.415],
+    "Poblacion": [10.700, 124.420],
+  },
+  "Tuburan": {
+    "Carmelo":   [10.730, 123.820],
+    "Lugo":      [10.725, 123.815],
+    "Poblacion": [10.728, 123.818],
+  },
 };
 
-let data = [], markers = [], selected = null, map;
+// ── API base URL (update this after deploying to Render) ──────────────────────
+const API_BASE = 'https://ev-chargeup-cebu.onrender.com';
 
+// ── State ──────────────────────────────────────────────────────────────────────
+let data = [];
+let markers = [];
+let selected = null;
+let contactOwnerName = null;
+let map;
+let activeFilter = 'all';
+
+// ── Map pin icon ───────────────────────────────────────────────────────────────
 const pinIcon = L.divIcon({
   className: '',
-  iconSize: [30,38], iconAnchor: [15,38],
-  html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#22c97a;border:2.5px solid rgba(255,255,255,0.85);box-shadow:0 3px 12px rgba(34,201,122,0.45)"></div>`
+  iconSize: [30, 38], iconAnchor: [15, 38],
+  html: `<div style="
+    width:30px;height:30px;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    background:#22c97a;
+    border:2.5px solid rgba(255,255,255,0.85);
+    box-shadow:0 3px 12px rgba(34,201,122,0.45);
+  "></div>`
 });
 
-// ── Fetch ──────────────────────────────────────────────────────────────────────
+// ── Fetch listings from server ─────────────────────────────────────────────────
 async function fetchListings() {
   try {
-    const res  = await fetch(API_URL);
+    const res = await fetch(`${API_BASE}/listings`);
     const rows = await res.json();
+
     if (rows.error) throw new Error(rows.error);
 
+    // Remove old markers
     markers.forEach(m => map.removeLayer(m));
     markers = [];
 
-    data = rows.filter(r => r.lat && r.lng).map((r, i) => ({ ...r, id: i + 1 }));
+    data = rows
+      .filter(r => r.lat && r.lng && (r.approved || '').toString().toLowerCase() === 'yes')
+      .map((r, i) => ({ ...r, id: i + 1 }));
+
     document.getElementById('count').textContent = data.length;
 
     data.forEach(d => {
@@ -194,49 +588,110 @@ async function fetchListings() {
       markers.push(m);
     });
 
+    // Fit map to show all pins with padding
     if (markers.length > 0) {
       const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.15));
+      map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 14 });
     }
 
     renderCards();
-  } catch(e) {
+  } catch (e) {
     document.getElementById('cards').innerHTML =
-      `<div class="empty-state"><strong>Could not load listings</strong>${esc(e.message)}</div>`;
+      `<div class="empty-state"><strong>Could not load listings</strong>${e.message}</div>`;
   }
 }
 
-// ── Cards ──────────────────────────────────────────────────────────────────────
+// ── Filter logic ───────────────────────────────────────────────────────────────
+function filterMatch(d) {
+  if (activeFilter === 'all') return true;
+  const t = (d.charger_type || '').toLowerCase();
+  if (activeFilter === 'solar') return t.includes('solar');
+  if (activeFilter === 'grid')  return t.includes('ev') || t.includes('charger');
+  return true;
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  data.forEach(d => {
+    const m = markers[d.id - 1];
+    if (!m) return;
+    filterMatch(d) ? m.addTo(map) : map.removeLayer(m);
+  });
+  renderCards();
+}
+
+// ── Render sidebar cards ───────────────────────────────────────────────────────
 function renderCards() {
   const el = document.getElementById('cards');
-  if (!data.length) {
-    el.innerHTML = `<div class="empty-state"><strong>No listings yet</strong>Be the first to share your solar energy with the Cebu community!</div>`;
+  const visible = data.filter(filterMatch);
+  if (!visible.length) {
+    el.innerHTML = `<div class="empty-state"><strong>No listings found</strong>Try a different filter or be the first to list in this category!</div>`;
     return;
   }
   el.innerHTML = '';
-  data.forEach(d => {
+  visible.forEach(d => {
     const div = document.createElement('div');
     div.className = 'card' + (selected === d.id ? ' active' : '');
     div.onclick = () => select(d.id);
+    const tags = chargerTags(d.charger_type, d.pricing);
     div.innerHTML = `
       <div class="card-name">${esc(d.name)}</div>
       <div class="card-place">${esc(d.barangay)}</div>
-      <div class="card-tags">${typeTags(d.charger_type)}</div>`;
+      <div class="card-tags">${tags}</div>`;
     el.appendChild(div);
   });
 }
 
-// ── Select ─────────────────────────────────────────────────────────────────────
+function chargerTags(type, pricing) {
+  type = (type || '').toLowerCase();
+  const typeTag = type.includes('solar')
+    ? '<span class="tag">&#9728; Solar-powered</span>'
+    : '<span class="tag">&#9889; Grid-powered</span>';
+  let priceTag = '';
+  if (pricing === 'Free') priceTag = '<span class="tag">Free</span>';
+  else if (pricing) {
+    const m = pricing.match(/[\d.]+/);
+    if (m) priceTag = `<span class="tag">&#8369;${m[0]}/kWh</span>`;
+  }
+  return typeTag + priceTag;
+}
+
+// ── Select a listing ───────────────────────────────────────────────────────────
 function select(id) {
   selected = id;
   renderCards();
   const d = data.find(x => x.id === id);
   map.flyTo([d.lat, d.lng], 15, { duration: 0.7 });
-  document.getElementById('p-name').textContent    = d.name;
+
+  document.getElementById('p-name').textContent = d.name;
   document.getElementById('p-address').textContent = d.address;
-  document.getElementById('p-chips').innerHTML     = typeChips(d.charger_type);
-  document.getElementById('p-note').textContent    = d.notes || 'Contact this owner to ask about availability and access.';
+  document.getElementById('p-chips').innerHTML = chargerChips(d.charger_type, d.pricing, d.power_kw);
+  document.getElementById('p-note').textContent =
+    d.notes || 'Contact this owner to ask about availability and access.';
   document.getElementById('popup').classList.add('open');
+}
+
+function chargerChips(type, pricing, power_kw) {
+  type = (type || '').toLowerCase();
+  const typeChip = type.includes('solar')
+    ? '<span class="chip">&#9728; Solar-powered charger</span>'
+    : '<span class="chip">&#9889; Grid-powered charger</span>';
+  let priceChip = '';
+  if (pricing === 'Free') {
+    priceChip = '<span class="chip">Free</span>';
+  } else if (pricing) {
+    const m = pricing.match(/[\d.]+/);
+    const kw = parseFloat(power_kw);
+    if (m && kw) {
+      const rate = parseFloat(m[0]);
+      priceChip = `<span class="chip">&#8369;${rate}/kWh &middot; &#8776;&#8369;${(rate * kw).toFixed(0)}/hr</span>`;
+    } else if (m) {
+      priceChip = `<span class="chip">&#8369;${m[0]}/kWh</span>`;
+    }
+  }
+  return typeChip + priceChip;
 }
 
 function closePopup() {
@@ -246,135 +701,297 @@ function closePopup() {
 }
 
 // ── Contact modal ──────────────────────────────────────────────────────────────
-function openContact() {
+function openContactModal() {
   const d = data.find(x => x.id === selected);
+  contactOwnerName = d.name;
   document.getElementById('modal').innerHTML = `
-    <div class="modal-name">Contact ${esc(d.name)}</div>
-    <div class="modal-sub">Reach out about their solar energy or EV charger — availability, pricing, and how to arrange access.</div>
-    ${d.contact ? `<div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px">
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Owner's contact</div>
-      <strong style="color:var(--green)">${esc(d.contact)}</strong>
-    </div>` : ''}
+    <div class="modal-name">Message ${esc(d.name)}</div>
+    <div class="modal-sub">Your message will be sent directly to the owner. They will reply to your email.</div>
     <div class="field"><label>Your name</label><input type="text" id="f-name" placeholder="e.g. Juan dela Cruz"/></div>
-    <div class="field"><label>Your contact</label><input type="text" id="f-from" placeholder="e.g. 09XX-XXX-XXXX"/></div>
-    <div class="field"><label>Message</label><textarea id="f-msg" placeholder="Hi! I saw your listing on SolarShare EV Cebu..."></textarea></div>
+    <div class="field"><label>Your email</label><input type="email" id="f-email" placeholder="e.g. juan@gmail.com"/></div>
+    <div class="field"><label>Your mobile number</label><input type="tel" id="f-phone" placeholder="09XX-XXX-XXXX"/></div>
+    <div class="field"><label>Your message</label><textarea id="f-msg" placeholder="Hi! I saw your listing on EV-ChargeUp Cebu and I'm interested..."></textarea></div>
+    <div id="f-error" class="form-error" style="display:none"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-send" onclick="sendContact()">Send</button>
+      <button class="btn-send" id="f-submit" onclick="sendContact()">Send message</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
 }
 
-function sendContact() {
-  const name = document.getElementById('f-name').value.trim();
-  const from = document.getElementById('f-from').value.trim();
-  const msg  = document.getElementById('f-msg').value.trim();
-  if (!name || !from || !msg) { alert('Please fill in all fields.'); return; }
-  document.getElementById('modal').innerHTML = `
-    <div class="success">
-      <div class="icon">&#10003;</div>
-      <h3>Done!</h3>
-      <p>Messaging will be fully wired up soon.<br>For now, reach the owner directly using the contact info shown.</p>
-      <button onclick="closeModal()">Close</button>
-    </div>`;
+async function sendContact() {
+  const ownerName = contactOwnerName;
+  const name    = document.getElementById('f-name').value.trim();
+  const email   = document.getElementById('f-email').value.trim();
+  const phone   = document.getElementById('f-phone').value.trim();
+  const msg     = document.getElementById('f-msg').value.trim();
+  const errEl   = document.getElementById('f-error');
+  if (!name)  { errEl.textContent = 'Please enter your name.';  errEl.style.display = 'block'; return; }
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = 'Please enter a valid email.'; errEl.style.display = 'block'; return; }
+  if (!phone) { errEl.textContent = 'Please enter your mobile number.'; errEl.style.display = 'block'; return; }
+  const phPattern = /^(\+?63|0)9\d{9}$/;
+  if (!phPattern.test(phone.replace(/[\s\-]/g, ''))) { errEl.textContent = 'Please enter a valid PH mobile number (e.g. 09XX-XXX-XXXX).'; errEl.style.display = 'block'; return; }
+  if (!msg)   { errEl.textContent = 'Please enter a message.';  errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('f-submit');
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  try {
+    const res = await fetch(`${API_BASE}/contact`, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ owner_name: ownerName, sender_name: name, sender_email: email, sender_phone: phone, message: msg }) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to send.');
+    document.getElementById('modal').innerHTML = `
+      <div class="success">
+        <div class="icon">&#10003;</div>
+        <h3>Message sent!</h3>
+        <p>The owner has been notified and will reply to <strong style="color:var(--green)">${esc(email)}</strong>.</p>
+        <p style="margin-top:10px;font-size:11px;color:var(--muted)">Their contact details remain private until they choose to share.</p>
+        <button onclick="closeModal()">Done</button>
+      </div>`;
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send message';
+  }
 }
 
 // ── Register modal ─────────────────────────────────────────────────────────────
 function showRegister() {
-  const opts = Object.keys(BARANGAY_COORDS).map(b => `<option value="${b}">${b}</option>`).join('');
+  const municipalityOptions = Object.keys(MUNICIPALITY_BARANGAYS)
+    .map(m => `<option value="${m}">${m}</option>`)
+    .join('');
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
   document.getElementById('modal').innerHTML = `
     <div class="modal-name">List your home</div>
-    <div class="modal-sub">Share your solar energy or EV charger with your Cebu community. Free to list.</div>
+    <div class="modal-sub">Solar-powered EV charging only. Charging hours are 7:00 AM – 3:00 PM to support the community during the energy crisis.</div>
+
     <div class="field"><label>Your name</label><input type="text" id="r-name" placeholder="e.g. Mang Romy Bacalso"/></div>
     <div class="field"><label>Full address</label><input type="text" id="r-address" placeholder="e.g. 12 Nivel Hills, Lahug, Cebu City"/></div>
     <div class="field">
-      <label>Barangay</label>
-      <select id="r-barangay" onchange="autoCoords()">
-        <option value="">-- Select barangay --</option>${opts}
+      <label>City / Municipality</label>
+      <select id="r-municipality" onchange="updateBarangayOptions()">
+        <option value="">-- Select city/municipality --</option>
+        ${municipalityOptions}
       </select>
+    </div>
+    <div class="field">
+      <label>Barangay</label>
+      <select id="r-barangay" onchange="autoFillCoords()">
+        <option value="">-- Select barangay --</option>
+      </select>
+    </div>
+    <div id="r-barangay-custom-wrap" style="display:none; margin-top:-6px; margin-bottom:13px">
+      <input type="text" id="r-barangay-custom" placeholder="Type your barangay name"
+        style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none"/>
     </div>
     <div class="field-row">
       <div class="field"><label>Latitude</label><input type="number" id="r-lat" step="0.0001" placeholder="10.3322"/></div>
       <div class="field"><label>Longitude</label><input type="number" id="r-lng" step="0.0001" placeholder="123.9050"/></div>
     </div>
-    <button class="geo-btn" onclick="useLocation()">&#128205; Use my current location</button>
+    <button class="geo-btn" onclick="useMyLocation()">&#128205; Use my current location</button>
     <div style="margin-top:14px"></div>
+
     <div class="field">
       <label>What are you sharing?</label>
-      <select id="r-type">
-        <option value="Both">Both — Solar energy &amp; EV charger</option>
-        <option value="Solar">Solar energy only</option>
-        <option value="EV Charger">EV charger only</option>
+      <select id="r-type" onchange="toggleSections()">
+        <option value="Solar">Solar-powered EV charger</option>
+        <option value="EV Charger">Grid-powered EV charger</option>
       </select>
     </div>
-    <div class="field"><label>Availability &amp; notes</label><textarea id="r-notes" placeholder="e.g. Free for neighbors, AC 7kW, weekends only..."></textarea></div>
-    <div class="field"><label>Your contact (phone or email)</label><input type="text" id="r-contact" placeholder="e.g. 09XX-XXX-XXXX"/></div>
-    <div id="r-err" class="form-error" style="display:none"></div>
+
+    <!-- EV section -->
+    <div id="ev-section">
+      <div class="section-divider">&#9889; EV Charger details</div>
+      <div class="field">
+        <label>Charger output</label>
+        <select id="r-power" onchange="updateRatePreview()">
+          <option value="3.7kW">3.7 kW — slow charger (Wuling, entry EVs)</option>
+          <option value="7kW" selected>7 kW — standard home charger</option>
+          <option value="11kW">11 kW — fast home charger</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pricing</label>
+        <select id="r-pricing" onchange="toggleRate()">
+          <option value="Free">Free for community</option>
+          <option value="per_kwh">&#8369; per kWh</option>
+        </select>
+      </div>
+      <div id="r-rate-wrap" style="display:none; margin-top:-6px; margin-bottom:13px">
+        <input type="number" id="r-rate" placeholder="e.g. 15" min="0" step="0.5" oninput="updateRatePreview()"
+          style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6">
+          Suggested: &#8369;15 &#8211; &#8369;30/kWh &middot; Final price is at the owner&#8217;s discretion.
+        </div>
+        <div id="r-rate-preview" style="display:none;font-size:11px;color:var(--green);margin-top:3px;font-weight:600"></div>
+      </div>
+      <div class="field">
+        <label>Days available</label>
+        <div class="day-grid">
+          ${days.map(d => `<label class="day-label"><input type="checkbox" name="day" value="${d}"> ${d}</label>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>Hours available</label>
+        <div class="field-row" style="align-items:center;gap:10px">
+          <div class="field" style="margin-bottom:0">
+            <select id="r-time-from">
+              <option>5:00 AM</option><option>6:00 AM</option><option selected>7:00 AM</option>
+              <option>8:00 AM</option><option>9:00 AM</option><option>10:00 AM</option>
+              <option>11:00 AM</option><option>12:00 PM</option><option>1:00 PM</option>
+              <option>2:00 PM</option><option>3:00 PM</option><option>4:00 PM</option>
+              <option>5:00 PM</option>
+            </select>
+          </div>
+          <span style="color:var(--muted);font-size:13px;flex-shrink:0">to</span>
+          <div class="field" style="margin-bottom:0">
+            <select id="r-time-to">
+              <option>8:00 AM</option><option>9:00 AM</option><option>10:00 AM</option>
+              <option>11:00 AM</option><option>12:00 PM</option><option>1:00 PM</option>
+              <option>2:00 PM</option><option selected>3:00 PM</option><option>4:00 PM</option>
+              <option>5:00 PM</option><option>6:00 PM</option><option>7:00 PM</option>
+              <option>8:00 PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="field"><label>Email</label><input type="email" id="r-email" placeholder="e.g. yourname@gmail.com"/></div>
+    <div class="field"><label>Mobile number (optional)</label><input type="tel" id="r-phone" placeholder="09XX-XXX-XXXX"/></div>
+    <div class="field"><label>Facebook (optional)</label><input type="text" id="r-facebook" placeholder="e.g. fb.com/yourname"/></div>
+    <div class="field"><label>Additional notes (optional)</label><textarea id="r-notes" placeholder="e.g. Park at the gate, message first before coming..."></textarea></div>
+    <div id="r-error" class="form-error" style="display:none"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-send" id="r-btn" onclick="submitListing()">Add to map</button>
+      <button class="btn-send" id="r-submit" onclick="submitListing()">Add to map</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
 }
 
-function autoCoords() {
-  const b = document.getElementById('r-barangay').value;
-  if (BARANGAY_COORDS[b]) {
-    document.getElementById('r-lat').value = BARANGAY_COORDS[b][0];
-    document.getElementById('r-lng').value = BARANGAY_COORDS[b][1];
+function toggleSections() {
+  // All listing types have EV charger details — section always visible
+}
+
+function toggleRate() {
+  const v = document.getElementById('r-pricing').value;
+  document.getElementById('r-rate-wrap').style.display = (v === 'Free') ? 'none' : 'block';
+  updateRatePreview();
+}
+
+function updateRatePreview() {
+  const rate = parseFloat(document.getElementById('r-rate').value);
+  const kw   = parseFloat(document.getElementById('r-power').value);
+  const el   = document.getElementById('r-rate-preview');
+  if (!el) return;
+  if (rate && kw) {
+    el.style.display = 'block';
+    el.textContent = `≈ ₱${(rate * kw).toFixed(0)}/hr for ${document.getElementById('r-power').value} charger`;
+  } else {
+    el.style.display = 'none';
   }
 }
 
-function useLocation() {
-  if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
-  navigator.geolocation.getCurrentPosition(
-    p => {
-      document.getElementById('r-lat').value = p.coords.latitude.toFixed(5);
-      document.getElementById('r-lng').value = p.coords.longitude.toFixed(5);
-    },
-    () => alert('Could not get location. Enter coordinates manually.')
-  );
+function updateBarangayOptions() {
+  const muni = document.getElementById('r-municipality').value;
+  const sel  = document.getElementById('r-barangay');
+  sel.innerHTML = '<option value="">-- Select barangay --</option><option value="Others">Others (type manually)</option>';
+  if (muni && MUNICIPALITY_BARANGAYS[muni]) {
+    Object.keys(MUNICIPALITY_BARANGAYS[muni]).sort().forEach(b => {
+      sel.innerHTML += `<option value="${b}">${b}</option>`;
+    });
+  }
+  document.getElementById('r-barangay-custom-wrap').style.display = 'none';
+  document.getElementById('r-lat').value = '';
+  document.getElementById('r-lng').value = '';
+}
+
+function autoFillCoords() {
+  const muni   = document.getElementById('r-municipality').value;
+  const brgy   = document.getElementById('r-barangay').value;
+  const isOther = brgy === 'Others';
+  document.getElementById('r-barangay-custom-wrap').style.display = isOther ? 'block' : 'none';
+  if (!isOther) document.getElementById('r-barangay-custom').value = '';
+  const coords = MUNICIPALITY_BARANGAYS[muni]?.[brgy];
+  if (coords) {
+    document.getElementById('r-lat').value = coords[0];
+    document.getElementById('r-lng').value = coords[1];
+  }
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('r-lat').value = pos.coords.latitude.toFixed(5);
+    document.getElementById('r-lng').value = pos.coords.longitude.toFixed(5);
+  }, () => alert('Could not get location. Please enter coordinates manually.'));
 }
 
 async function submitListing() {
   const name     = document.getElementById('r-name').value.trim();
   const address  = document.getElementById('r-address').value.trim();
-  const barangay = document.getElementById('r-barangay').value;
+  const municipality   = document.getElementById('r-municipality').value;
+  const barangaySelect = document.getElementById('r-barangay').value;
+  const barangay       = barangaySelect === 'Others'
+    ? document.getElementById('r-barangay-custom').value.trim()
+    : barangaySelect;
   const lat      = parseFloat(document.getElementById('r-lat').value);
   const lng      = parseFloat(document.getElementById('r-lng').value);
   const type     = document.getElementById('r-type').value;
+  const phone    = document.getElementById('r-phone').value.trim();
+  const facebook = document.getElementById('r-facebook').value.trim();
+  const email    = document.getElementById('r-email').value.trim();
   const notes    = document.getElementById('r-notes').value.trim();
-  const contact  = document.getElementById('r-contact').value.trim();
-  const errEl    = document.getElementById('r-err');
+  const errEl    = document.getElementById('r-error');
 
-  if (!name || !address || !barangay || !lat || !lng || !contact) {
-    errEl.textContent = 'Please fill in all required fields.';
-    errEl.style.display = 'block';
-    return;
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  if (!address) { errEl.textContent = 'Please enter your address.'; errEl.style.display = 'block'; return; }
+  if (!municipality) { errEl.textContent = 'Please select your city or municipality.'; errEl.style.display = 'block'; return; }
+  if (!barangay) { errEl.textContent = 'Please select your barangay.'; errEl.style.display = 'block'; return; }
+  if (!lat || !lng) { errEl.textContent = 'Please set your location — select a barangay or use GPS.'; errEl.style.display = 'block'; return; }
+  if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.style.display = 'block'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
+  if (phone) {
+    const phPattern = /^(\+?63|0)9\d{9}$/;
+    if (!phPattern.test(phone.replace(/[\s\-]/g, ''))) {
+      errEl.textContent = 'Mobile number format is invalid (e.g. 09XX-XXX-XXXX).'; errEl.style.display = 'block'; return;
+    }
   }
 
-  const btn = document.getElementById('r-btn');
+  const power_kw = document.getElementById('r-power').value;
+  const pType    = document.getElementById('r-pricing').value;
+  const pRate    = document.getElementById('r-rate').value.trim();
+  if (pType !== 'Free' && !pRate) { errEl.textContent = 'Please enter your charging rate.'; errEl.style.display = 'block'; return; }
+  const pricing  = pType === 'Free' ? 'Free' : `₱${pRate}/kWh`;
+  const days     = [...document.querySelectorAll('input[name="day"]:checked')].map(x => x.value).join(',');
+  if (!days) { errEl.textContent = 'Please select at least one available day.'; errEl.style.display = 'block'; return; }
+  const hours    = `${document.getElementById('r-time-from').value} – ${document.getElementById('r-time-to').value}`;
+
+  const btn = document.getElementById('r-submit');
   btn.disabled = true;
   btn.textContent = 'Saving…';
   errEl.style.display = 'none';
 
   try {
-    // Apps Script doesn't support CORS on POST, so we use no-cors + text/plain
-    await fetch(API_URL, {
+    const res = await fetch('/listings', {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ name, address, barangay, lat, lng, charger_type: type, notes, contact }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, address, barangay: `${barangay}, ${municipality}`, lat, lng, charger_type: type, power_kw, pricing, days, hours, notes, phone, facebook, email }),
     });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
 
     document.getElementById('modal').innerHTML = `
       <div class="success">
-        <div class="icon">&#9889;</div>
-        <h3>You're on the map!</h3>
-        <p>Thank you, <strong style="color:var(--text)">${esc(name)}</strong>.<br>Your listing is now live for the Cebu community.</p>
-        <button onclick="closeModal(); fetchListings()">See the map</button>
+        <div class="icon">&#9203;</div>
+        <h3>Request submitted!</h3>
+        <p>Thank you, <strong style="color:var(--text)">${esc(name)}</strong>.<br>Your listing is pending admin approval. We will notify you once it has been reviewed and goes live on the map.</p>
+        <button onclick="closeModal()">Got it</button>
       </div>`;
-  } catch(e) {
+  } catch (e) {
     btn.disabled = false;
     btn.textContent = 'Add to map';
     errEl.textContent = 'Error: ' + e.message;
@@ -385,24 +1002,10 @@ async function submitListing() {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
 
-function typeTags(t) {
-  t = (t||'').toLowerCase();
-  let o = '';
-  if (t.includes('solar')||t.includes('both')) o += '<span class="tag">&#9728; Solar</span>';
-  if (t.includes('ev')||t.includes('charger')||t.includes('both')) o += '<span class="tag">&#9889; EV</span>';
-  return o || `<span class="tag">${esc(t)}</span>`;
-}
-
-function typeChips(t) {
-  t = (t||'').toLowerCase();
-  let o = '';
-  if (t.includes('solar')||t.includes('both')) o += '<span class="chip">&#9728; Solar panels</span>';
-  if (t.includes('ev')||t.includes('charger')||t.includes('both')) o += '<span class="chip">&#9889; EV charger</span>';
-  return o || `<span class="chip">${esc(t)}</span>`;
-}
-
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
@@ -413,6 +1016,7 @@ window.onload = () => {
   }).addTo(map);
 
   fetchListings();
+  setInterval(fetchListings, 3 * 60 * 1000); // auto-refresh every 3 minutes
 
   document.getElementById('overlay').addEventListener('click', e => {
     if (e.target.id === 'overlay') closeModal();
