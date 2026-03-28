@@ -111,6 +111,13 @@
   .day-label input { accent-color:var(--green); }
   .hours-note { font-size:11px; color:var(--muted); background:rgba(34,201,122,0.06); border:1px solid rgba(34,201,122,0.15); border-radius:6px; padding:8px 10px; margin-top:8px; line-height:1.5; }
 
+  /* MAP LEGEND */
+  .map-legend { position:absolute; bottom:28px; left:12px; background:rgba(14,15,13,0.92); border:1px solid var(--border); border-radius:10px; padding:10px 13px; z-index:998; backdrop-filter:blur(4px); }
+  .legend-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); margin-bottom:7px; }
+  .legend-item { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--text); margin-bottom:4px; }
+  .legend-item:last-child { margin-bottom:0; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
   /* MISSION FOOTER */
   .mission { padding:14px 18px; border-top:1px solid var(--border); flex-shrink:0; }
   .mission-text { font-size:11px; line-height:1.6; color:var(--text); }
@@ -156,7 +163,17 @@
 </header>
 
 <div class="main">
-  <div id="map"></div>
+  <div id="map">
+    <div class="map-legend">
+      <div class="legend-title">Map Legend</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#22c97a"></span> Community homes</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#0066CC"></span> SM Malls (Free)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#FFB800"></span> Oakridge (Free)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#E63946"></span> ACMobility / Ayala</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#FF6B35"></span> BYD / Prince</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#9B59B6"></span> NUSTAR</div>
+    </div>
+  </div>
 
   <div class="sidebar">
     <div class="sidebar-top">
@@ -189,9 +206,9 @@
   <div class="popup-name" id="p-name"></div>
   <div class="popup-address" id="p-address"></div>
   <div class="popup-chips" id="p-chips"></div>
-  <div class="popup-price-note">Rates shown are indicative. Final price is at the owner&#8217;s discretion &#8212; confirm via direct contact.</div>
+  <div class="popup-price-note" id="p-price-note">Rates shown are indicative. Final price is at the owner&#8217;s discretion &#8212; confirm via direct contact.</div>
   <div class="popup-note" id="p-note"></div>
-  <button class="contact-btn" onclick="openContactModal()">Contact owner &rarr;</button>
+  <button class="contact-btn" id="p-action-btn" onclick="openContactModal()">Contact owner &rarr;</button>
 </div>
 
 <!-- Modal (shared for contact + register) -->
@@ -566,18 +583,115 @@ const MUNICIPALITY_BARANGAYS = {
   },
 };
 
+// ── Public EV Charging Stations (hardcoded) ───────────────────────────────────
+const STATIC_STATIONS = [
+  // SM Malls — Free (Blue #0066CC)
+  { name:"SM City Cebu", brand:"SM", color:"#0066CC",
+    address:"North Reclamation Area, Cebu City",
+    lat:10.311419, lng:123.917816,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"Free",
+    hours:"Mall hours (10AM–9PM)",
+    notes:"3rd floor, multi-level parking structure. Maximum 3 hours per vehicle." },
+  { name:"SM Seaside City Cebu", brand:"SM", color:"#0066CC",
+    address:"South Road Properties, Cebu City",
+    lat:10.282330, lng:123.881305,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"Free",
+    hours:"Sun–Thu 10AM–9PM, Fri–Sat 10AM–10PM",
+    notes:"2nd floor, Mountain Wing, near Ramp 3. Maximum 3 hours per vehicle." },
+  { name:"SM City Mandaue (JMall)", brand:"SM", color:"#0066CC",
+    address:"A.S. Fortuna St., Mandaue City",
+    lat:10.335172, lng:123.933988,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"Free",
+    hours:"Sun–Thu 10AM–9PM, Fri–Sat 10AM–10PM",
+    notes:"Basement 1 Parking Level. Maximum 3 hours per vehicle." },
+  // Oakridge — Free (Gold #FFB800)
+  { name:"Oakridge Business Park", brand:"Oakridge", color:"#FFB800",
+    address:"880 A.S. Fortuna St., Banilad, Mandaue City",
+    lat:10.342864, lng:123.919095,
+    charger_type:"AC Charger", power_kw:"22kW", pricing:"Free",
+    hours:"7AM–11PM daily",
+    notes:"2 units, Wallbox Pulsar Plus 22kW, Type 2 connector." },
+  // ACMobility / Ayala — Paid (Red #E63946)
+  { name:"Ayala Center Cebu", brand:"ACMobility", color:"#E63946",
+    address:"Cebu Business Park, Cebu City",
+    lat:10.318237, lng:123.905229,
+    charger_type:"AC Charger", power_kw:"22kW", pricing:"₱33.50/kWh",
+    hours:"Mall hours",
+    notes:"Basement 1 parking. 2x 22kW AC chargers (CCS2). Use the ACMobility app to start a session." },
+  { name:"Il Corso (Filinvest)", brand:"ACMobility", color:"#E63946",
+    address:"South Road Properties, Cebu City",
+    lat:10.265137, lng:123.877098,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"₱33.50/kWh",
+    hours:"Mall hours",
+    notes:"4x 7kW AC chargers. Use the ACMobility app to start a session." },
+  // BYD / Prince — Paid (Orange #FF6B35)
+  { name:"BYD Cebu North – GlobalStar Motors", brand:"BYD", color:"#FF6B35",
+    address:"21 A.S. Fortuna St., Mandaue City",
+    lat:10.340080, lng:123.923459,
+    charger_type:"DC Fast Charger", power_kw:"60kW", pricing:"Paid",
+    hours:"Dealership hours",
+    notes:"2x 60kW DC CCS2 + 2x 22kW AC Type 2. Major charging hub in north Cebu." },
+  { name:"Prince Warehouse Club", brand:"Prince", color:"#FF6B35",
+    address:"Toledo City, Cebu",
+    lat:10.381933, lng:123.648260,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"₱33.50/kWh",
+    hours:"Store hours",
+    notes:"ACMobility / BYD network. Along the Toledo–Cebu City RORO corridor. Use ACMobility app." },
+  { name:"Prince Superstore", brand:"Prince", color:"#FF6B35",
+    address:"Damolog, Sogod, Northern Cebu",
+    lat:10.767463, lng:124.005867,
+    charger_type:"DC Fast Charger", power_kw:"60kW", pricing:"₱33.50/kWh",
+    hours:"Store hours",
+    notes:"2x 60kW DC + 1x Type 2/GBT charger. BYD / ACMobility network." },
+  { name:"Prince Express Inn", brand:"Prince", color:"#FF6B35",
+    address:"Dela Viña St., Gairan, Bogo City, Northern Cebu",
+    lat:11.054062, lng:124.012063,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"Paid",
+    hours:"24/7",
+    notes:"BYD Cebu network. Hotel stop for long drives to northern Cebu." },
+  { name:"Prince Express", brand:"Prince", color:"#FF6B35",
+    address:"Dumanjug, Southwestern Cebu",
+    lat:10.069859, lng:123.447195,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"Paid",
+    hours:"Store hours",
+    notes:"BYD Cebu network. Along the southern RORO corridor." },
+  // NUSTAR — Paid (Purple #9B59B6)
+  { name:"NUSTAR Resort and Casino", brand:"NUSTAR", color:"#9B59B6",
+    address:"Kawit Island, SRP, Cebu City",
+    lat:10.272147, lng:123.880803,
+    charger_type:"AC Charger", power_kw:"7kW", pricing:"₱25/kWh",
+    hours:"24/7",
+    notes:"Type 2 compatible. One of the first public EV chargers in Cebu City. Open to non-guests." },
+];
+
 // ── API base (Render backend) ──────────────────────────────────────────────────
 const API_BASE = 'https://ev-chargeup-cebu.onrender.com';
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let data = [];
 let markers = [];
+let staticMarkers = [];
 let selected = null;
 let contactOwnerName = null;
 let map;
 let activeFilter = 'all';
 
-// ── Map pin icon ───────────────────────────────────────────────────────────────
+// ── Map pin icons ──────────────────────────────────────────────────────────────
+function brandPin(color) {
+  return L.divIcon({
+    className: '',
+    iconSize: [26, 34], iconAnchor: [13, 34],
+    html: `<div style="
+      width:26px;height:26px;
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      background:${color};
+      border:2.5px solid rgba(255,255,255,0.85);
+      box-shadow:0 3px 10px ${color}99;
+    "></div>`
+  });
+}
+
 const pinIcon = L.divIcon({
   className: '',
   iconSize: [30, 38], iconAnchor: [15, 38],
@@ -685,7 +799,7 @@ function chargerTags(type, pricing) {
   return typeTag + priceTag;
 }
 
-// ── Select a listing ───────────────────────────────────────────────────────────
+// ── Select a community listing ─────────────────────────────────────────────────
 function select(id) {
   selected = id;
   renderCards();
@@ -697,7 +811,46 @@ function select(id) {
   document.getElementById('p-chips').innerHTML = chargerChips(d.charger_type, d.pricing, d.power_kw);
   document.getElementById('p-note').textContent =
     d.notes || 'Contact this owner to ask about availability and access.';
+  document.getElementById('p-price-note').style.display = '';
+  const btn = document.getElementById('p-action-btn');
+  btn.textContent = 'Contact owner →';
+  btn.onclick = openContactModal;
   document.getElementById('popup').classList.add('open');
+}
+
+// ── Select a public station ────────────────────────────────────────────────────
+function selectStation(idx) {
+  selected = null;
+  renderCards();
+  const s = STATIC_STATIONS[idx];
+  map.flyTo([s.lat, s.lng], 15, { duration: 0.7 });
+
+  document.getElementById('p-name').innerHTML =
+    `${esc(s.name)} <span style="font-size:11px;padding:2px 9px;border-radius:10px;background:${s.color}22;color:${s.color};font-weight:700;border:1px solid ${s.color}44;vertical-align:middle">${s.brand}</span>`;
+  document.getElementById('p-address').textContent = s.address;
+  document.getElementById('p-chips').innerHTML = [
+    `<span class="chip">${s.charger_type}</span>`,
+    `<span class="chip">${s.power_kw}</span>`,
+    `<span class="chip" style="${s.pricing==='Free'?'color:var(--green);border-color:rgba(34,201,122,0.4);background:rgba(34,201,122,0.12)':''}">${s.pricing}</span>`,
+    `<span class="chip">🕐 ${s.hours}</span>`,
+  ].join('');
+  document.getElementById('p-price-note').style.display = 'none';
+  document.getElementById('p-note').textContent = s.notes;
+  const btn = document.getElementById('p-action-btn');
+  btn.textContent = 'Get directions →';
+  btn.onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`, '_blank');
+  document.getElementById('popup').classList.add('open');
+}
+
+// ── Load public stations on map ────────────────────────────────────────────────
+function loadStaticStations() {
+  staticMarkers.forEach(m => map.removeLayer(m));
+  staticMarkers = [];
+  STATIC_STATIONS.forEach((s, i) => {
+    const m = L.marker([s.lat, s.lng], { icon: brandPin(s.color) }).addTo(map);
+    m.on('click', () => selectStation(i));
+    staticMarkers.push(m);
+  });
 }
 
 function chargerChips(type, pricing, power_kw) {
@@ -1043,6 +1196,7 @@ window.onload = () => {
   }).addTo(map);
 
   fetchListings();
+  loadStaticStations();
   setInterval(fetchListings, 3 * 60 * 1000); // auto-refresh every 3 minutes
 
   document.getElementById('overlay').addEventListener('click', e => {
